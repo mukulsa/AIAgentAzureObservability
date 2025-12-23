@@ -30,6 +30,7 @@ from dotenv import load_dotenv
 load_dotenv()
 APPLICATION_INSIGHTS_CONNECTION_STRING = os.getenv("APPLICATION_INSIGHTS_CONNECTION_STRING")
 AZURE_AI_PROJECT_ENDPOINT = os.getenv("AZURE_AI_PROJECT_ENDPOINT")
+AGENT_ID1=os.getenv("AGENT_ID1")
 
 # -------------------------------
 # OpenTelemetry & App Insights
@@ -39,7 +40,9 @@ os.environ["AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED"] = "true"
 
 # Setup logging
 logging.basicConfig(level=logging.ERROR)
+# logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("agent_chat")
+
 
 configure_azure_monitor(
     connection_string=APPLICATION_INSIGHTS_CONNECTION_STRING,
@@ -48,10 +51,8 @@ configure_azure_monitor(
 )
 OpenAIInstrumentor().instrument()
 
-
 # Setup tracer
 tracer = trace.get_tracer(__name__)
-
 
 # --- Event Handler (like in /chat) ---
 class MyEventHandler(AsyncAgentEventHandler[str]):
@@ -71,6 +72,11 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
     async def on_run_step(self, step: RunStep):
         if step.type == RunStepType.TOOL_CALLS and step.status == RunStepStatus.COMPLETED:
             logger.info(f"Tool details: {step.step_details}")
+        #     return json.dumps({
+        #     "type": "tool_call",
+        #     "status": step.status,
+        #     "details": step.step_details
+        # })
 
     async def on_error(self, error: Exception):
         logger.error(f"Error in agent run: {error}")
@@ -90,7 +96,7 @@ async def main():
     async with DefaultAzureCredential() as credential,  \
             AgentsClient(credential=credential, endpoint=endpoint) as agent_client:
 
-        agent = await agent_client.get_agent("asst_jZznhfcNUmwqZssNeAfD1q7t")
+        agent = await agent_client.get_agent(AGENT_ID1)
     
         # Inject trace context
         carrier = {}
